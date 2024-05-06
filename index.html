@@ -240,7 +240,7 @@ const showImages = function(tag) {
         const commands = {
             '*tag': showImages
         };
-
+console.log(commands);
         annyang.addCommands(commands);
         annyang.start({ autoRestart: true, continuous: false });
     } else {
