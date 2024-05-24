@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Imagers</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-     <style>
+    <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -24,18 +24,20 @@
             align-items: center;
         }
         .image-box {
-            position: relative;
+            width: 100px;
+            margin: 5px 0;
             transition: transform 0.3s ease, filter 0.3s ease, z-index 0.3s ease;
             border-radius: 10px;
             overflow: hidden;
+            position: relative;
         }
         .image-box img {
             display: block;
             width: 100%;
-            height: 100%;
+            height: auto;
             border-radius: 10px;
         }
-        .image-box .image-title {
+        .image-title {
             position: absolute;
             bottom: 0;
             background: rgba(0, 0, 0, 0.6);
@@ -49,7 +51,8 @@
         .image-box:hover .image-title {
             opacity: 1;
         }
-        .image-box:hover img {
+        .image-box:hover {
+            z-index: 100;
             transform: scale(1.2);
             filter: blur(0);
         }
@@ -80,7 +83,7 @@
     <h1 id="queryTitle">"<span id="queryPlaceholder">Say anything</span>"</h1>
     <div id="hoveredLanguage"></div>
     <div id="map"></div>
-
+ 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -232,144 +235,115 @@
             ku: 'Kurdish', mn: 'Mongolian', su: 'Sundanese', si: 'Sinhalese', kn: 'Kannada',
             diq: 'Zazaki', am: 'Amharic', ckb: 'Central Kurdish', ia: 'Interlingua', nap: 'Neapolitan',
             bug: 'Buginese', 'bat-smg': 'Samogitian', wa: 'Walloon'
-        }; const fetchStateBoundaries = async (countryName) => {
-            const url = `https://nominatim.openstreetmap.org/search?country=${countryName}&polygon_geojson=1&format=json`;
-            const response = await fetch(url);
-            const data = await response.json();
-            if (data && data[0] && data[0].geojson) {
-                return data[0].geojson;
-            } else {
-                console.error(`Error retrieving state boundaries for ${countryName}`);
-                return null;
-            }
-        };
+        }; const createImageMarker = function(src, title, lang, index) {
+    const location = languageLocations[lang] || [0, 0];
+    const html = `<div class="image-box">
+                    <img src="${src}" alt="${title}">
+                    <div class="image-title">${title} (${langNames[lang]})</div>
+                  </div>`;
+    
+    const icon = L.divIcon({
+        className: 'custom-icon',
+        html: html,
+        iconSize: [100, 100], // Adjust based on your needs
+        popupAnchor: [0, -20]
+    });
 
-        const createImageMarker = function(src, title, lang, stateBounds) {
-            const size = calculateImageSize(stateBounds);
-            const html = `<div class="image-box" style="width: ${size.width}px; height: ${size.height}px;">
-                            <img src="${src}" alt="${title}">
-                            <div class="image-title">${title} (${langNames[lang]})</div>
-                          </div>`;
+    const marker = L.marker(location, { icon: icon }).addTo(map);
+    marker.on('mouseover', () => {
+        hoveredLanguage.textContent = langNames[lang];
+    });
+    marker.on('mouseout', () => {
+        hoveredLanguage.textContent = '';
+    });
+};
 
-            const icon = L.divIcon({
-                className: 'custom-icon',
-                html: html,
-                iconSize: [size.width, size.height],
-                popupAnchor: [0, -size.height / 2]
-            });
+// Existing code for showImages, fetchImages, getTranslation, and getImage functions
 
-            const boundsCenter = stateBounds.getCenter();
-            const marker = L.marker(boundsCenter, { icon: icon }).addTo(map);
-            marker.on('mouseover', () => {
-                hoveredLanguage.textContent = langNames[lang];
-            });
-            marker.on('mouseout', () => {
-                hoveredLanguage.textContent = '';
-            });
-        };
+const showImages = function(tag) {
+    tag = tag.replace(/\.$/, '');
+    document.getElementById('queryPlaceholder').textContent = tag;
+    map.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+            map.removeLayer(layer);
+        }
+    });
+    displayedImages = [];
+    displayedTitles = [];
+    fetchImages(tag, 'en');
+};
 
-        const calculateImageSize = (bounds) => {
-            const width = map.latLngToLayerPoint(bounds.getNorthEast()).x - map.latLngToLayerPoint(bounds.getSouthWest()).x;
-            const height = map.latLngToLayerPoint(bounds.getNorthEast()).y - map.latLngToLayerPoint(bounds.getSouthWest()).y;
-            const scaleFactor = 0.6; // Adjust scale factor as needed
-            return {
-                width: width * scaleFactor,
-                height: height * scaleFactor
-            };
-        };
-
-        const showImages = async function(tag) {
-            tag = tag.replace(/\.$/, '');
-            document.getElementById('queryPlaceholder').textContent = tag;
-            map.eachLayer((layer) => {
-                if (layer instanceof L.Marker) {
-                    map.removeLayer(layer);
-                }
-            });
-            displayedImages = [];
-            displayedTitles = [];
-            const stateBoundaries = await fetchStateBoundaries('Germany'); // Adjust to dynamically get country name
-            fetchImages(tag, 'en', stateBoundaries);
-        };
-
-        const fetchImages = function(tag, lang, stateBoundaries) {
-            const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(tag)}&format=json&origin=*`;
-            $.ajax({
-                url: url,
-                method: 'GET',
-                success: function(data) {
-                    if (data.query.search.length > 0) {
-                        let index = 0;
-                        data.query.search.forEach((result) => {
-                            const title = result.title;
-                            if (!displayedTitles.includes(title)) {
-                                displayedTitles.push(title);
-                                getImage(title, lang, tag, index, stateBoundaries);
-                                languages.forEach(targetLang => {
-                                    if (targetLang !== 'en') {
-                                        getTranslation(title, 'en', targetLang, tag, index, stateBoundaries);
-                                    }
-                                });
-                                index++;
+const fetchImages = function(tag, lang) {
+    const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(tag)}&format=json&origin=*`;
+    $.ajax({
+        url: url,
+        method: 'GET',
+        success: function(data) {
+            if (data.query.search.length > 0) {
+                let index = 0;
+                data.query.search.forEach((result) => {
+                    const title = result.title;
+                    if (!displayedTitles.includes(title)) {
+                        displayedTitles.push(title);
+                        getImage(title, lang, tag, index);
+                        languages.forEach(targetLang => {
+                            if (targetLang !== 'en') {
+                                getTranslation(title, 'en', targetLang, tag, index);
                             }
                         });
+                        index++;
                     }
-                },
-                error: function() {
-                    console.error(`Error retrieving information for ${lang}`);
-                }
-            });
-        };
+                });
+            }
+        },
+        error: function() {
+            console.error(`Error retrieving information for ${lang}`);
+        }
+    });
+};
 
-        const getTranslation = function(title, fromLang, toLang, tag, index, stateBoundaries) {
-            const url = `https://${fromLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=langlinks&lllang=${toLang}&format=json&origin=*`;
-            $.ajax({
-                url: url,
-                method: 'GET',
-                success: function(data) {
-                    const pages = data.query.pages;
-                    const pageId = Object.keys(pages)[0];
-                    const translation = pages[pageId].langlinks ? pages[pageId].langlinks[0]['*'] : title;
-                    if (!displayedTitles.includes(translation)) {
-                        displayedTitles.push(translation);
-                        getImage(translation, toLang, tag, index, stateBoundaries);
-                    }
-                },
-                error: function() {
-                    console.log('Error in translation fetching for ' + toLang);
-                }
-            });
-        };
+const getTranslation = function(title, fromLang, toLang, tag, index) {
+    const url = `https://${fromLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=langlinks&lllang=${toLang}&format=json&origin=*`;
+    $.ajax({
+        url: url,
+        method: 'GET',
+        success: function(data) {
+            const pages = data.query.pages;
+            const pageId = Object.keys(pages)[0];
+            const translation = pages[pageId].langlinks ? pages[pageId].langlinks[0]['*'] : title;
+            if (!displayedTitles.includes(translation)) {
+                displayedTitles.push(translation);
+                getImage(translation, toLang, tag, index);
+            }
+        },
+        error: function() {
+            console.log('Error in translation fetching for ' + toLang);
+        }
+    });
+};
 
-        const getImage = function(pageTitle, lang, tag, index, stateBoundaries) {
-            const url = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages|info&inprop=url&pithumbsize=500&format=json&origin=*`;
-            $.ajax({
-                url: url,
-                method: 'GET',
-                success: function(data) {
-                    const pages = data.query.pages;
-                    const pageId = Object.keys(pages)[0];
-                    if (pages[pageId].thumbnail && !displayedImages.includes(pages[pageId].thumbnail.source)) {
-                        displayedImages.push(pages[pageId].thumbnail.source);
-                        const stateBounds = L.geoJSON(stateBoundaries).getBounds();
-                        createImageMarker(pages[pageId].thumbnail.source, pageTitle, lang, stateBounds);
-                    }
-                },
-                error: function() {
-                    console.error(`Error retrieving images for ${lang}`);
-                }
-            });
-        };
+const getImage = function(pageTitle, lang, tag, index) {
+    const url = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages|info&inprop=url&pithumbsize=500&format=json&origin=*`;
+    $.ajax({
+        url: url,
+        method: 'GET',
+        success: function(data) {
+            const pages = data.query.pages;
+            const pageId = Object.keys(pages)[0];
+            if (pages[pageId].thumbnail && !displayedImages.includes(pages[pageId].thumbnail.source)) {
+                displayedImages.push(pages[pageId].thumbnail.source);
+                createImageMarker(pages[pageId].thumbnail.source, pageTitle, lang, index);
+            }
+        },
+        error: function() {
+            console.error(`Error retrieving images for ${lang}`);
+        }
+    });
+};
 
-        const commands = {
-            '*tag': showImages
-        };
+const commands = {
+    '*tag': showImages
+};
 
-        annyang.addCommands(commands);
-        annyang.start({ autoRestart: true, continuous: false });
-    </script>
-</body>
-</html>
-    </script>
-</body>
-</html>
+annyang.addCommands(commands);
+annyang.start({ autoRestart: true, continuous: false });
