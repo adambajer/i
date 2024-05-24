@@ -6,7 +6,7 @@
     <title>Imagers</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-       body {
+     body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
@@ -18,12 +18,16 @@
 #map {
     height: 100vh;
     width: 100vw;
+    position: relative;
+    z-index: 0; /* Ensures the map is below everything else */
 }
 
 .leaflet-popup-content {
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
+    z-index: 1; /* Ensures popups are above the map */
 }
 
 .image-box {
@@ -31,8 +35,8 @@
     margin: 5px 0;
     transition: transform 1s ease, filter 1s ease;
     border-radius: 5px;
-    position: relative;
-    z-index: 1;
+    position: absolute; /* Changed to absolute to control stacking context */
+    z-index: 10; /* Base z-index for images */
 }
 
 .image-box img {
@@ -42,7 +46,7 @@
     height: auto;
     border-radius: 5px;
     border: 2px solid;
-    z-index: 1;
+    z-index: 11; /* Ensures the image is above the box */
 }
 
 .image-title {
@@ -59,21 +63,20 @@
     text-align: center;
     opacity: 0;
     transition: opacity 1s ease-in-out;
-    z-index: 2;
+    z-index: 12; /* Ensures the title is above the image */
 }
 
 .image-box:hover .image-title {
     opacity: 1;
-    z-index: 100;
 }
 
 .image-box:hover {
-    z-index: 100;
+    z-index: 100; /* Brings the whole image box to the front */
     transform: scale(5);
 }
 
 .image-box:hover img {
-    z-index: 100;
+    z-index: 101; /* Ensures the image is above everything else */
 }
 
 #queryTitle {
@@ -98,6 +101,7 @@
     text-shadow: 0px 0px 4px white;
     z-index: 999;
 }
+
 
     </style>
 </head>
