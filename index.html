@@ -4,34 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Imagers</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
             margin: 0;
-            padding: 4px;
+            padding: 0;
             overflow: hidden;
             background: #000;
             color: #fff;
         }
-        .container {
-            position: relative;
-            width: 100vw;
+        #map {
             height: 100vh;
-            overflow: hidden;
+            width: 100vw;
+        }
+        .leaflet-popup-content {
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
             align-items: center;
         }
-        .row {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            margin-bottom: 10px;
-        }
         .image-box {
-            margin: 5px;
+            width: 100px;
+            margin: 5px 0;
             transition: transform 0.3s ease, filter 0.3s ease, z-index 0.3s ease;
             border-radius: 10px;
             overflow: hidden;
@@ -88,167 +82,265 @@
 <body>
     <h1 id="queryTitle">"<span id="queryPlaceholder">Say anything</span>"</h1>
     <div id="hoveredLanguage"></div>
-    <div class="container" id="imageContainer"></div>
+    <div id="map"></div>
     <audio id="dingSound" src="ding.mp3"></audio>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        if (annyang) {
-            const container = document.getElementById('imageContainer');
-            const hoveredLanguage = document.getElementById('hoveredLanguage');
-            let displayedImages = [];
-            let displayedTitles = [];
+        const map = L.map('map').setView([20, 0], 2); // Center the map on the equator
 
-            const languages = [
-                'en', 'sv', 'ceb', 'de', 'nl', 'fr', 'ru', 'it', 'es', 'pl',
-                'war', 'vi', 'ja', 'zh', 'pt', 'uk', 'ca', 'fa', 'no', 'sh',
-                'ar', 'fi', 'id', 'ro', 'cs', 'hu', 'sr', 'ko', 'ms', 'tr',
-                'min', 'eo', 'kk', 'eu', 'da', 'sk', 'bg', 'he', 'lt', 'hy',
-                'sl', 'hr', 'et', 'gl', 'nn', 'simple', 'uz', 'vo', 'la', 'el',
-                'az', 'ur', 'hi', 'th', 'ka', 'ce', 'be', 'ta', 'mk', 'mg',
-                'oc', 'lv', 'ky', 'tt', 'bs', 'tg', 'sq', 'new', 'pms', 'tl',
-                'te', 'be-tarask', 'br', 'ast', 'ml', 'bn', 'io', 'af', 'pnb',
-                'gu', 'nds', 'scn', 'bpy', 'pa', 'azb', 'ku', 'mn', 'su', 'si',
-                'kn', 'diq', 'am', 'ckb', 'ia', 'nap', 'bug', 'bat-smg', 'wa'
-            ];
-            
-            const langNames = {
-                en: 'English', sv: 'Swedish', ceb: 'Cebuano', de: 'German', nl: 'Dutch',
-                fr: 'French', ru: 'Russian', it: 'Italian', es: 'Spanish', pl: 'Polish',
-                war: 'Waray', vi: 'Vietnamese', ja: 'Japanese', zh: 'Chinese', pt: 'Portuguese',
-                uk: 'Ukrainian', ca: 'Catalan', fa: 'Persian', no: 'Norwegian', sh: 'Serbo-Croatian',
-                ar: 'Arabic', fi: 'Finnish', id: 'Indonesian', ro: 'Romanian', cs: 'Czech',
-                hu: 'Hungarian', sr: 'Serbian', ko: 'Korean', ms: 'Malay', tr: 'Turkish',
-                min: 'Minangkabau', eo: 'Esperanto', kk: 'Kazakh', eu: 'Basque', da: 'Danish',
-                sk: 'Slovak', bg: 'Bulgarian', he: 'Hebrew', lt: 'Lithuanian', hy: 'Armenian',
-                sl: 'Slovenian', hr: 'Croatian', et: 'Estonian', gl: 'Galician', nn: 'Norwegian Nynorsk',
-                simple: 'Simple English', uz: 'Uzbek', vo: 'Volapük', la: 'Latin', el: 'Greek',
-                az: 'Azerbaijani', ur: 'Urdu', hi: 'Hindi', th: 'Thai', ka: 'Georgian',
-                ce: 'Chechen', be: 'Belarusian', ta: 'Tamil', mk: 'Macedonian', mg: 'Malagasy',
-                oc: 'Occitan', lv: 'Latvian', ky: 'Kirghiz', tt: 'Tatar', bs: 'Bosnian',
-                tg: 'Tajik', sq: 'Albanian', new: 'Newar', pms: 'Piemontese', tl: 'Tagalog',
-                te: 'Telugu', 'be-tarask': 'Belarusian (Taraskievica)', br: 'Breton', ast: 'Asturian', ml: 'Malayalam',
-                bn: 'Bengali', io: 'Ido', af: 'Afrikaans', pnb: 'Western Punjabi', gu: 'Gujarati',
-                nds: 'Low Saxon', scn: 'Sicilian', bpy: 'Bishnupriya Manipuri', pa: 'Punjabi', azb: 'South Azerbaijani',
-                ku: 'Kurdish', mn: 'Mongolian', su: 'Sundanese', si: 'Sinhalese', kn: 'Kannada',
-                diq: 'Zazaki', am: 'Amharic', ckb: 'Central Kurdish', ia: 'Interlingua', nap: 'Neapolitan',
-                bug: 'Buginese', 'bat-smg': 'Samogitian', wa: 'Walloon'
-            };
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
 
-            const showImages = function(tag) {
-                tag = tag.replace(/\.$/, '');
-                document.getElementById('queryPlaceholder').textContent = tag;
-                container.innerHTML = '';
-                displayedImages = [];
-                displayedTitles = [];
-                fetchImages(tag, 'en');
-            };
+   const languageLocations = {
+    'en': [51.509865, -0.118092], // English in London, UK
+    'sv': [59.3293, 18.0686], // Swedish in Stockholm, Sweden
+    'ceb': [10.3157, 123.8854], // Cebuano in Cebu, Philippines
+    'de': [52.5200, 13.4050], // German in Berlin, Germany
+    'nl': [52.3676, 4.9041], // Dutch in Amsterdam, Netherlands
+    'fr': [48.8566, 2.3522], // French in Paris, France
+    'ru': [55.7558, 37.6173], // Russian in Moscow, Russia
+    'it': [41.9028, 12.4964], // Italian in Rome, Italy
+    'es': [40.4168, -3.7038], // Spanish in Madrid, Spain
+    'pl': [52.2297, 21.0122], // Polish in Warsaw, Poland
+    'war': [11.245, 124.999], // Waray in Tacloban, Philippines
+    'vi': [21.0285, 105.8542], // Vietnamese in Hanoi, Vietnam
+    'ja': [35.6895, 139.6917], // Japanese in Tokyo, Japan
+    'zh': [39.9042, 116.4074], // Chinese in Beijing, China
+    'pt': [38.7167, -9.1390], // Portuguese in Lisbon, Portugal
+    'uk': [50.4501, 30.5234], // Ukrainian in Kyiv, Ukraine
+    'ca': [41.3851, 2.1734], // Catalan in Barcelona, Spain
+    'fa': [35.6892, 51.3890], // Persian in Tehran, Iran
+    'no': [59.9139, 10.7522], // Norwegian in Oslo, Norway
+    'sh': [44.7866, 20.4489], // Serbo-Croatian in Belgrade, Serbia
+    'ar': [24.7136, 46.6753], // Arabic in Riyadh, Saudi Arabia
+    'fi': [60.1695, 24.9354], // Finnish in Helsinki, Finland
+    'id': [6.2088, 106.8456], // Indonesian in Jakarta, Indonesia
+    'ro': [44.4268, 26.1025], // Romanian in Bucharest, Romania
+    'cs': [50.0755, 14.4378], // Czech in Prague, Czech Republic
+    'hu': [47.4979, 19.0402], // Hungarian in Budapest, Hungary
+    'sr': [44.7866, 20.4489], // Serbian in Belgrade, Serbia
+    'ko': [37.5665, 126.9780], // Korean in Seoul, South Korea
+    'ms': [3.1390, 101.6869], // Malay in Kuala Lumpur, Malaysia
+    'tr': [41.0082, 28.9784], // Turkish in Istanbul, Turkey
+    'min': [0.5333, 101.4500], // Minangkabau in Pekanbaru, Indonesia
+    'eo': [54.6872, 25.2797], // Esperanto in Vilnius, Lithuania
+    'kk': [51.1694, 71.4491], // Kazakh in Nur-Sultan, Kazakhstan
+    'eu': [43.2630, -2.9349], // Basque in Bilbao, Spain
+    'da': [55.6761, 12.5683], // Danish in Copenhagen, Denmark
+    'sk': [48.1486, 17.1077], // Slovak in Bratislava, Slovakia
+    'bg': [42.6977, 23.3219], // Bulgarian in Sofia, Bulgaria
+    'he': [31.7683, 35.2137], // Hebrew in Jerusalem, Israel
+    'lt': [54.6872, 25.2797], // Lithuanian in Vilnius, Lithuania
+    'hy': [40.1792, 44.4991], // Armenian in Yerevan, Armenia
+    'sl': [46.0511, 14.5051], // Slovenian in Ljubljana, Slovenia
+    'hr': [45.8150, 15.9819], // Croatian in Zagreb, Croatia
+    'et': [59.4370, 24.7535], // Estonian in Tallinn, Estonia
+    'gl': [42.8782, -8.5448], // Galician in Santiago de Compostela, Spain
+    'nn': [60.4720, 8.4689], // Norwegian Nynorsk in Norway
+    'simple': [51.509865, -0.118092], // Simple English in London, UK (same as English)
+    'uz': [41.2995, 69.2401], // Uzbek in Tashkent, Uzbekistan
+    'vo': [54.6872, 25.2797], // Volapük in Vilnius, Lithuania (example)
+    'la': [41.9028, 12.4964], // Latin in Rome, Italy
+    'el': [37.9838, 23.7275], // Greek in Athens, Greece
+    'az': [40.4093, 49.8671], // Azerbaijani in Baku, Azerbaijan
+    'ur': [24.8607, 67.0011], // Urdu in Karachi, Pakistan
+    'hi': [28.6139, 77.2090], // Hindi in New Delhi, India
+    'th': [13.7563, 100.5018], // Thai in Bangkok, Thailand
+    'ka': [41.7151, 44.8271], // Georgian in Tbilisi, Georgia
+    'ce': [43.3178, 45.6985], // Chechen in Grozny, Russia
+    'be': [53.9045, 27.5615], // Belarusian in Minsk, Belarus
+    'ta': [13.0827, 80.2707], // Tamil in Chennai, India
+    'mk': [41.9981, 21.4254], // Macedonian in Skopje, North Macedonia
+    'mg': [-18.8792, 47.5079], // Malagasy in Antananarivo, Madagascar
+    'oc': [43.6108, 3.8767], // Occitan in Montpellier, France
+    'lv': [56.9496, 24.1052], // Latvian in Riga, Latvia
+    'ky': [42.8746, 74.5698], // Kirghiz in Bishkek, Kyrgyzstan
+    'tt': [55.8304, 49.0661], // Tatar in Kazan, Russia
+    'bs': [43.8563, 18.4131], // Bosnian in Sarajevo, Bosnia and Herzegovina
+    'tg': [38.5598, 68.7870], // Tajik in Dushanbe, Tajikistan
+    'sq': [41.3275, 19.8187], // Albanian in Tirana, Albania
+    'new': [27.7172, 85.3240], // Newar in Kathmandu, Nepal
+    'pms': [45.0703, 7.6869], // Piemontese in Turin, Italy
+    'tl': [14.5995, 120.9842], // Tagalog in Manila, Philippines
+    'te': [17.3850, 78.4867], // Telugu in Hyderabad, India
+    'be-tarask': [53.9045, 27.5615], // Belarusian (Taraskievica) in Minsk, Belarus (same as Belarusian)
+    'br': [48.8566, 2.3522], // Breton in Paris, France (example)
+    'ast': [43.3603, -5.8448], // Asturian in Oviedo, Spain
+    'ml': [10.8505, 76.2711], // Malayalam in Kerala, India
+    'bn': [23.8103, 90.4125], // Bengali in Dhaka, Bangladesh
+    'io': [48.8566, 2.3522], // Ido in Paris, France (example)
+    'af': [-25.7479, 28.2293], // Afrikaans in Pretoria, South Africa
+    'pnb': [31.5497, 74.3436], // Western Punjabi in Lahore, Pakistan
+    'gu': [23.0225, 72.5714], // Gujarati in Ahmedabad, India
+    'nds': [53.5511, 9.9937], // Low Saxon in Hamburg, Germany
+    'scn': [37.5079, 15.0830], // Sicilian in Catania, Italy
+    'bpy': [24.7907, 92.8216], // Bishnupriya Manipuri in Sylhet, Bangladesh
+    'pa': [30.7333, 76.7794], // Punjabi in Chandigarh, India
+    'azb': [38.0700, 46.2900], // South Azerbaijani in Tabriz, Iran
+    'ku': [36.1911, 44.0092], // Kurdish in Erbil, Iraq
+    'mn': [47.8864, 106.9057], // Mongolian in Ulaanbaatar, Mongolia
+    'su': [-6.9175, 107.6191], // Sundanese in Bandung, Indonesia
+    'si': [6.9271, 79.8612], // Sinhalese in Colombo, Sri Lanka
+    'kn': [12.9716, 77.5946], // Kannada in Bangalore, India
+    'diq': [39.2142, 39.4911], // Zazaki in Bingöl, Turkey
+    'am': [9.0301, 38.7408], // Amharic in Addis Ababa, Ethiopia
+    'ckb': [35.5653, 45.4329], // Central Kurdish in Sulaymaniyah, Iraq
+    'ia': [41.9028, 12.4964], // Interlingua in Rome, Italy (example)
+    'nap': [40.8518, 14.2681], // Neapolitan in Naples, Italy
+    'bug': [-5.1477, 119.4327], // Buginese in Makassar, Indonesia
+    'bat-smg': [55.4848, 21.1354], // Samogitian in Klaipeda, Lithuania
+    'wa': [50.4543, 3.9523], // Walloon in Mons, Belgium
+};
 
-            const fetchImages = function(tag, lang) {
-                const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(tag)}&format=json&origin=*`;
-                $.ajax({
-                    url: url,
-                    method: 'GET',
-                    success: function(data) {
-                        if (data.query.search.length > 0) {
-                            let index = 0;
-                            data.query.search.forEach((result) => {
-                                const title = result.title;
-                                if (!displayedTitles.includes(title)) {
-                                    displayedTitles.push(title);
-                                    getImage(title, lang, tag, index);
-                                    languages.forEach(targetLang => {
-                                        if (targetLang !== 'en') {
-                                            getTranslation(title, 'en', targetLang, tag, index);
-                                        }
-                                    });
-                                    index++;
-                                }
-                            });
-                        }
-                    },
-                    error: function() {
-                        console.error(`Error retrieving information for ${lang}`);
-                    }
-                });
-            };
 
-            const getTranslation = function(title, fromLang, toLang, tag, index) {
-                const url = `https://${fromLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=langlinks&lllang=${toLang}&format=json&origin=*`;
-                $.ajax({
-                    url: url,
-                    method: 'GET',
-                    success: function(data) {
-                        const pages = data.query.pages;
-                        const pageId = Object.keys(pages)[0];
-                        const translation = pages[pageId].langlinks ? pages[pageId].langlinks[0]['*'] : title;
-                        if (!displayedTitles.includes(translation)) {
-                            displayedTitles.push(translation);
-                            getImage(translation, toLang, tag, index);
-                        }
-                    },
-                    error: function() {
-                        console.log('Error in translation fetching for ' + toLang);
-                    }
-                });
-            };
+        const container = document.getElementById('map');
+        const hoveredLanguage = document.getElementById('hoveredLanguage');
+        let displayedImages = [];
+        let displayedTitles = [];
 
-            const getImage = function(pageTitle, lang, tag, index) {
-                const url = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages|info&inprop=url&pithumbsize=500&format=json&origin=*`;
-                $.ajax({
-                    url: url,
-                    method: 'GET',
-                    success: function(data) {
-                        const pages = data.query.pages;
-                        const pageId = Object.keys(pages)[0];
-                        if (pages[pageId].thumbnail && !displayedImages.includes(pages[pageId].thumbnail.source)) {
-                            displayedImages.push(pages[pageId].thumbnail.source);
-                            createImageBox(pages[pageId].thumbnail.source, pageTitle, lang, index);
-                        }
-                    },
-                    error: function() {
-                        console.error(`Error retrieving images for ${lang}`);
-                    }
-                });
-            };
+        const languages = [
+            'en', 'sv', 'ceb', 'de', 'nl', 'fr', 'ru', 'it', 'es', 'pl',
+            'war', 'vi', 'ja', 'zh', 'pt', 'uk', 'ca', 'fa', 'no', 'sh',
+            'ar', 'fi', 'id', 'ro', 'cs', 'hu', 'sr', 'ko', 'ms', 'tr',
+            'min', 'eo', 'kk', 'eu', 'da', 'sk', 'bg', 'he', 'lt', 'hy',
+            'sl', 'hr', 'et', 'gl', 'nn', 'simple', 'uz', 'vo', 'la', 'el',
+            'az', 'ur', 'hi', 'th', 'ka', 'ce', 'be', 'ta', 'mk', 'mg',
+            'oc', 'lv', 'ky', 'tt', 'bs', 'tg', 'sq', 'new', 'pms', 'tl',
+            'te', 'be-tarask', 'br', 'ast', 'ml', 'bn', 'io', 'af', 'pnb',
+            'gu', 'nds', 'scn', 'bpy', 'pa', 'azb', 'ku', 'mn', 'su', 'si',
+            'kn', 'diq', 'am', 'ckb', 'ia', 'nap', 'bug', 'bat-smg', 'wa'
+        ];
+        
+        const langNames = {
+            en: 'English', sv: 'Swedish', ceb: 'Cebuano', de: 'German', nl: 'Dutch',
+            fr: 'French', ru: 'Russian', it: 'Italian', es: 'Spanish', pl: 'Polish',
+            war: 'Waray', vi: 'Vietnamese', ja: 'Japanese', zh: 'Chinese', pt: 'Portuguese',
+            uk: 'Ukrainian', ca: 'Catalan', fa: 'Persian', no: 'Norwegian', sh: 'Serbo-Croatian',
+            ar: 'Arabic', fi: 'Finnish', id: 'Indonesian', ro: 'Romanian', cs: 'Czech',
+            hu: 'Hungarian', sr: 'Serbian', ko: 'Korean', ms: 'Malay', tr: 'Turkish',
+            min: 'Minangkabau', eo: 'Esperanto', kk: 'Kazakh', eu: 'Basque', da: 'Danish',
+            sk: 'Slovak', bg: 'Bulgarian', he: 'Hebrew', lt: 'Lithuanian', hy: 'Armenian',
+            sl: 'Slovenian', hr: 'Croatian', et: 'Estonian', gl: 'Galician', nn: 'Norwegian Nynorsk',
+            simple: 'Simple English', uz: 'Uzbek', vo: 'Volapük', la: 'Latin', el: 'Greek',
+            az: 'Azerbaijani', ur: 'Urdu', hi: 'Hindi', th: 'Thai', ka: 'Georgian',
+            ce: 'Chechen', be: 'Belarusian', ta: 'Tamil', mk: 'Macedonian', mg: 'Malagasy',
+            oc: 'Occitan', lv: 'Latvian', ky: 'Kirghiz', tt: 'Tatar', bs: 'Bosnian',
+            tg: 'Tajik', sq: 'Albanian', new: 'Newar', pms: 'Piemontese', tl: 'Tagalog',
+            te: 'Telugu', 'be-tarask': 'Belarusian (Taraskievica)', br: 'Breton', ast: 'Asturian', ml: 'Malayalam',
+            bn: 'Bengali', io: 'Ido', af: 'Afrikaans', pnb: 'Western Punjabi', gu: 'Gujarati',
+            nds: 'Low Saxon', scn: 'Sicilian', bpy: 'Bishnupriya Manipuri', pa: 'Punjabi', azb: 'South Azerbaijani',
+            ku: 'Kurdish', mn: 'Mongolian', su: 'Sundanese', si: 'Sinhalese', kn: 'Kannada',
+            diq: 'Zazaki', am: 'Amharic', ckb: 'Central Kurdish', ia: 'Interlingua', nap: 'Neapolitan',
+            bug: 'Buginese', 'bat-smg': 'Samogitian', wa: 'Walloon'
+        };
 
-            const createImageBox = function(src, title, lang, index) {
-                const rowIndex = Math.floor(index / 5);
-                const colIndex = index % 5;
-
-                const imgBox = document.createElement('div');
-                imgBox.classList.add('image-box');
-                imgBox.style.width = `${20 - rowIndex * 2}%`;
-                imgBox.style.filter = `blur(${rowIndex}px)`;
-                imgBox.style.zIndex = 10 - rowIndex;
-                imgBox.innerHTML = `<img src="${src}" alt="${title}"><div class="image-title">${title} (${langNames[lang]})</div>`;
-                
-                if (!document.querySelector(`.row-${rowIndex}`)) {
-                    const row = document.createElement('div');
-                    row.classList.add('row', `row-${rowIndex}`);
-                    container.appendChild(row);
+        const showImages = function(tag) {
+            tag = tag.replace(/\.$/, '');
+            document.getElementById('queryPlaceholder').textContent = tag;
+            map.eachLayer((layer) => {
+                if (layer instanceof L.Marker) {
+                    map.removeLayer(layer);
                 }
-                document.querySelector(`.row-${rowIndex}`).appendChild(imgBox);
+            });
+            displayedImages = [];
+            displayedTitles = [];
+            fetchImages(tag, 'en');
+        };
 
-                imgBox.addEventListener('mouseenter', () => {
-                    hoveredLanguage.textContent = langNames[lang];
-                });
+        const fetchImages = function(tag, lang) {
+            const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(tag)}&format=json&origin=*`;
+            $.ajax({
+                url: url,
+                method: 'GET',
+                success: function(data) {
+                    if (data.query.search.length > 0) {
+                        let index = 0;
+                        data.query.search.forEach((result) => {
+                            const title = result.title;
+                            if (!displayedTitles.includes(title)) {
+                                displayedTitles.push(title);
+                                getImage(title, lang, tag, index);
+                                languages.forEach(targetLang => {
+                                    if (targetLang !== 'en') {
+                                        getTranslation(title, 'en', targetLang, tag, index);
+                                    }
+                                });
+                                index++;
+                            }
+                        });
+                    }
+                },
+                error: function() {
+                    console.error(`Error retrieving information for ${lang}`);
+                }
+            });
+        };
 
-                imgBox.addEventListener('mouseleave', () => {
-                    hoveredLanguage.textContent = '';
-                });
-            };
+        const getTranslation = function(title, fromLang, toLang, tag, index) {
+            const url = `https://${fromLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=langlinks&lllang=${toLang}&format=json&origin=*`;
+            $.ajax({
+                url: url,
+                method: 'GET',
+                success: function(data) {
+                    const pages = data.query.pages;
+                    const pageId = Object.keys(pages)[0];
+                    const translation = pages[pageId].langlinks ? pages[pageId].langlinks[0]['*'] : title;
+                    if (!displayedTitles.includes(translation)) {
+                        displayedTitles.push(translation);
+                        getImage(translation, toLang, tag, index);
+                    }
+                },
+                error: function() {
+                    console.log('Error in translation fetching for ' + toLang);
+                }
+            });
+        };
 
-            const commands = {
-                '*tag': showImages
-            };
+        const getImage = function(pageTitle, lang, tag, index) {
+            const url = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages|info&inprop=url&pithumbsize=500&format=json&origin=*`;
+            $.ajax({
+                url: url,
+                method: 'GET',
+                success: function(data) {
+                    const pages = data.query.pages;
+                    const pageId = Object.keys(pages)[0];
+                    if (pages[pageId].thumbnail && !displayedImages.includes(pages[pageId].thumbnail.source)) {
+                        displayedImages.push(pages[pageId].thumbnail.source);
+                        createImageMarker(pages[pageId].thumbnail.source, pageTitle, lang, index);
+                    }
+                },
+                error: function() {
+                    console.error(`Error retrieving images for ${lang}`);
+                }
+            });
+        };
 
-            annyang.addCommands(commands);
-            annyang.start({ autoRestart: true, continuous: false });
-        } else {
-            document.getElementById('imageContainer').innerHTML = "<p>Your browser does not support voice recognition.</p>";
-        }
+        const createImageMarker = function(src, title, lang, index) {
+            const location = languageLocations[lang] || [0, 0];
+            const marker = L.marker(location).addTo(map);
+            const imgBox = `<div class="image-box">
+                                <img src="${src}" alt="${title}">
+                                <div class="image-title">${title} (${langNames[lang]})</div>
+                            </div>`;
+            marker.bindPopup(imgBox);
+            marker.on('popupopen', () => {
+                hoveredLanguage.textContent = langNames[lang];
+            });
+            marker.on('popupclose', () => {
+                hoveredLanguage.textContent = '';
+            });
+        };
+
+        const commands = {
+            '*tag': showImages
+        };
+
+        annyang.addCommands(commands);
+        annyang.start({ autoRestart: true, continuous: false });
     </script>
 </body>
 </html>
