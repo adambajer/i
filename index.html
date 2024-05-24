@@ -11,6 +11,8 @@
             margin: 0;
             padding: 4px;
             overflow: hidden;
+            background: #000;
+            color: #fff;
         }
         .container {
             position: relative;
@@ -18,11 +20,16 @@
             height: 100vh;
             overflow: hidden;
         }
-        .image-box {
+        .row {
+            display: flex;
+            justify-content: center;
             position: absolute;
+            width: 100%;
+        }
+        .image-box {
+            margin: 5px;
             transition: transform 0.3s ease, filter 0.3s ease, z-index 0.3s ease;
             border-radius: 10px;
-            will-change: transform;
         }
         .image-box img {
             display: block;
@@ -44,10 +51,10 @@
         .image-box:hover .image-title {
             opacity: 1;
         }
-        .image-box.focused {
+        .image-box:hover {
             z-index: 100;
-            transform: scale(1.2) !important;
-            filter: blur(0) !important;
+            transform: scale(1.2);
+            filter: blur(0);
         }
         #queryTitle {
             background: rgba(255, 255, 255, 0.5);
@@ -86,7 +93,6 @@
             const hoveredLanguage = document.getElementById('hoveredLanguage');
             let displayedImages = [];
             let displayedTitles = [];
-            let layers = [];
 
             const languages = [
                 'en', 'sv', 'ceb', 'de', 'nl', 'fr', 'ru', 'it', 'es', 'pl',
@@ -130,7 +136,6 @@
                 container.innerHTML = '';
                 displayedImages = [];
                 displayedTitles = [];
-                layers = [[], [], []]; // Initialize layers
                 fetchImages(tag, 'en');
             };
 
@@ -141,7 +146,8 @@
                     method: 'GET',
                     success: function(data) {
                         if (data.query.search.length > 0) {
-                            data.query.search.slice(0, 10).forEach((result, index) => {
+                            let index = 0;
+                            data.query.search.forEach((result) => {
                                 const title = result.title;
                                 if (!displayedTitles.includes(title)) {
                                     displayedTitles.push(title);
@@ -151,6 +157,7 @@
                                             getTranslation(title, 'en', targetLang, tag, index);
                                         }
                                     });
+                                    index++;
                                 }
                             });
                         }
@@ -201,48 +208,33 @@
             };
 
             const createImageBox = function(src, title, lang, index) {
-                const layerIndex = Math.floor(Math.random() * 3); // Randomly assign to one of the 3 layers
+                const rows = Math.ceil(displayedTitles.length / 5);
+                const rowIndex = Math.floor(index / 5);
+                const colIndex = index % 5;
+
                 const imgBox = document.createElement('div');
                 imgBox.classList.add('image-box');
-                imgBox.style.top = `${Math.random() * 80}vh`;
-                imgBox.style.left = `${Math.random() * 80}vw`;
-                imgBox.style.width = `${20 + Math.random() * 10}vw`;
-                imgBox.style.zIndex = layerIndex;
-                imgBox.style.filter = `blur(${3 - layerIndex}px)`;
+                imgBox.style.width = `${20 - rowIndex * 2}%`;
+                imgBox.style.filter = `blur(${rowIndex}px)`;
+                imgBox.style.zIndex = rows - rowIndex;
                 imgBox.innerHTML = `<img src="${src}" alt="${title}"><div class="image-title">${title} (${langNames[lang]})</div>`;
-                layers[layerIndex].push(imgBox);
-                container.appendChild(imgBox);
+                
+                if (!document.querySelector(`.row-${rowIndex}`)) {
+                    const row = document.createElement('div');
+                    row.classList.add('row', `row-${rowIndex}`);
+                    row.style.bottom = `${rowIndex * 10 + 10}%`;
+                    container.appendChild(row);
+                }
+                document.querySelector(`.row-${rowIndex}`).appendChild(imgBox);
 
                 imgBox.addEventListener('mouseenter', () => {
-                    layers[layerIndex].forEach(box => box.classList.add('focused'));
                     hoveredLanguage.textContent = langNames[lang];
                 });
 
                 imgBox.addEventListener('mouseleave', () => {
-                    layers[layerIndex].forEach(box => box.classList.remove('focused'));
                     hoveredLanguage.textContent = '';
                 });
-
-                // Add random motion
-                const randomMotion = () => {
-                    const x = (Math.random() - 0.5) * 20;
-                    const y = (Math.random() - 0.5) * 20;
-                    imgBox.style.transform = `translate(${x}px, ${y}px)`;
-                };
-                setInterval(randomMotion, 2000);
             };
-
-            document.addEventListener('mousemove', (e) => {
-                const x = (e.clientX / window.innerWidth) - 0.5;
-                const y = (e.clientY / window.innerHeight) - 0.5;
-
-                layers.forEach((layer, layerIndex) => {
-                    layer.forEach(img => {
-                        const speed = (layerIndex + 1) * 2;
-                        img.style.transform = `translate(${-x * speed}px, ${-y * speed}px)`;
-                    });
-                });
-            });
 
             const commands = {
                 '*tag': showImages
