@@ -234,7 +234,7 @@
             bug: 'Buginese', 'bat-smg': 'Samogitian', wa: 'Walloon'
         };
 
-        const fetchStateBoundaries = async (countryName) => {
+         const fetchStateBoundaries = async (countryName) => {
             const url = `https://nominatim.openstreetmap.org/search?country=${countryName}&polygon_geojson=1&format=json`;
             const response = await fetch(url);
             const data = await response.json();
@@ -273,7 +273,7 @@
         const calculateImageSize = (bounds) => {
             const width = bounds.getEast() - bounds.getWest();
             const height = bounds.getNorth() - bounds.getSouth();
-            const scaleFactor = 10; // Adjust scale factor as needed
+            const scaleFactor = 100; // Adjust scale factor as needed
             return {
                 width: width * scaleFactor,
                 height: height * scaleFactor
@@ -290,7 +290,7 @@
             });
             displayedImages = [];
             displayedTitles = [];
-            const stateBoundaries = await fetchStateBoundaries('Germany');
+            const stateBoundaries = await fetchStateBoundaries('Germany'); // Adjust to dynamically get country name
             fetchImages(tag, 'en', stateBoundaries);
         };
 
@@ -369,6 +369,7 @@
 
         annyang.addCommands(commands);
         annyang.start({ autoRestart: true, continuous: false });
+ 
     </script>
 </body>
 </html>
