@@ -237,104 +237,109 @@
             diq: 'Zazaki', am: 'Amharic', ckb: 'Central Kurdish', ia: 'Interlingua', nap: 'Neapolitan',
             bug: 'Buginese', 'bat-smg': 'Samogitian', wa: 'Walloon'
         };
+const createImageMarker = function(src, title, lang, index) {
+    const location = languageLocations[lang] || [0, 0];
+    const html = `<div class="image-box">
+                    <img src="${src}" alt="${title}">
+                    <div class="image-title">${title} (${langNames[lang]})</div>
+                  </div>`;
+    
+    const icon = L.divIcon({
+        className: 'custom-icon',
+        html: html,
+        iconSize: [100, 100], // Adjust based on your needs
+        popupAnchor: [0, -20]
+    });
 
-        const showImages = function(tag) {
-            tag = tag.replace(/\.$/, '');
-            document.getElementById('queryPlaceholder').textContent = tag;
-            map.eachLayer((layer) => {
-                if (layer instanceof L.Marker) {
-                    map.removeLayer(layer);
-                }
-            });
-            displayedImages = [];
-            displayedTitles = [];
-            fetchImages(tag, 'en');
-        };
+    const marker = L.marker(location, { icon: icon }).addTo(map);
+    marker.on('mouseover', () => {
+        hoveredLanguage.textContent = langNames[lang];
+    });
+    marker.on('mouseout', () => {
+        hoveredLanguage.textContent = '';
+    });
+};
 
-        const fetchImages = function(tag, lang) {
-            const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(tag)}&format=json&origin=*`;
-            $.ajax({
-                url: url,
-                method: 'GET',
-                success: function(data) {
-                    if (data.query.search.length > 0) {
-                        let index = 0;
-                        data.query.search.forEach((result) => {
-                            const title = result.title;
-                            if (!displayedTitles.includes(title)) {
-                                displayedTitles.push(title);
-                                getImage(title, lang, tag, index);
-                                languages.forEach(targetLang => {
-                                    if (targetLang !== 'en') {
-                                        getTranslation(title, 'en', targetLang, tag, index);
-                                    }
-                                });
-                                index++;
+const showImages = function(tag) {
+    tag = tag.replace(/\.$/, '');
+    document.getElementById('queryPlaceholder').textContent = tag;
+    map.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+            map.removeLayer(layer);
+        }
+    });
+    displayedImages = [];
+    displayedTitles = [];
+    fetchImages(tag, 'en');
+};
+  const fetchImages = function(tag, lang) {
+    const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(tag)}&format=json&origin=*`;
+    $.ajax({
+        url: url,
+        method: 'GET',
+        success: function(data) {
+            if (data.query.search.length > 0) {
+                let index = 0;
+                data.query.search.forEach((result) => {
+                    const title = result.title;
+                    if (!displayedTitles.includes(title)) {
+                        displayedTitles.push(title);
+                        getImage(title, lang, tag, index);
+                        languages.forEach(targetLang => {
+                            if (targetLang !== 'en') {
+                                getTranslation(title, 'en', targetLang, tag, index);
                             }
                         });
+                        index++;
                     }
-                },
-                error: function() {
-                    console.error(`Error retrieving information for ${lang}`);
-                }
-            });
-        };
+                });
+            }
+        },
+        error: function() {
+            console.error(`Error retrieving information for ${lang}`);
+        }
+    });
+};
 
-        const getTranslation = function(title, fromLang, toLang, tag, index) {
-            const url = `https://${fromLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=langlinks&lllang=${toLang}&format=json&origin=*`;
-            $.ajax({
-                url: url,
-                method: 'GET',
-                success: function(data) {
-                    const pages = data.query.pages;
-                    const pageId = Object.keys(pages)[0];
-                    const translation = pages[pageId].langlinks ? pages[pageId].langlinks[0]['*'] : title;
-                    if (!displayedTitles.includes(translation)) {
-                        displayedTitles.push(translation);
-                        getImage(translation, toLang, tag, index);
-                    }
-                },
-                error: function() {
-                    console.log('Error in translation fetching for ' + toLang);
-                }
-            });
-        };
 
-        const getImage = function(pageTitle, lang, tag, index) {
-            const url = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages|info&inprop=url&pithumbsize=500&format=json&origin=*`;
-            $.ajax({
-                url: url,
-                method: 'GET',
-                success: function(data) {
-                    const pages = data.query.pages;
-                    const pageId = Object.keys(pages)[0];
-                    if (pages[pageId].thumbnail && !displayedImages.includes(pages[pageId].thumbnail.source)) {
-                        displayedImages.push(pages[pageId].thumbnail.source);
-                        createImageMarker(pages[pageId].thumbnail.source, pageTitle, lang, index);
-                    }
-                },
-                error: function() {
-                    console.error(`Error retrieving images for ${lang}`);
-                }
-            });
-        };
-
-        const createImageMarker = function(src, title, lang, index) {
-            const location = languageLocations[lang] || [0, 0];
-            const marker = L.marker(location).addTo(map);
-            const imgBox = `<div class="image-box">
-                                <img src="${src}" alt="${title}">
-                                <div class="image-title">${title} (${langNames[lang]})</div>
-                            </div>`;
-            marker.bindPopup(imgBox);
-            marker.on('popupopen', () => {
-                hoveredLanguage.textContent = langNames[lang];
-            });
-            marker.on('popupclose', () => {
-                hoveredLanguage.textContent = '';
-            });
-        };
-
+const getTranslation = function(title, fromLang, toLang, tag, index) {
+    const url = `https://${fromLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=langlinks&lllang=${toLang}&format=json&origin=*`;
+    $.ajax({
+        url: url,
+        method: 'GET',
+        success: function(data) {
+            const pages = data.query.pages;
+            const pageId = Object.keys(pages)[0];
+            const translation = pages[pageId].langlinks ? pages[pageId].langlinks[0]['*'] : title;
+            if (!displayedTitles.includes(translation)) {
+                displayedTitles.push(translation);
+                getImage(translation, toLang, tag, index);
+            }
+        },
+        error: function() {
+            console.log('Error in translation fetching for ' + toLang);
+        }
+    });
+};
+  const getImage = function(pageTitle, lang, tag, index) {
+    const url = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages|info&inprop=url&pithumbsize=500&format=json&origin=*`;
+    $.ajax({
+        url: url,
+        method: 'GET',
+        success: function(data) {
+            const pages = data.query.pages;
+            const pageId = Object.keys(pages)[0];
+            if (pages[pageId].thumbnail && !displayedImages.includes(pages[pageId].thumbnail.source)) {
+                displayedImages.push(pages[pageId].thumbnail.source);
+                createImageMarker(pages[pageId].thumbnail.source, pageTitle, lang, index);
+            }
+        },
+        error: function() {
+            console.error(`Error retrieving images for ${lang}`);
+        }
+    });
+};
+ 
         const commands = {
             '*tag': showImages
         };
