@@ -6,91 +6,99 @@
     <title>Imagers</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background: #000;
-            color: #fff;
-        }
-        #map {
-            height: 100vh;
-            width: 100vw;
-        }
-        .leaflet-popup-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .image-box {
-            width: 100px;
-            margin: 5px 0;
-            transition: transform 1s ease, filter 1s ease, z-index 1s ease;
-            border-radius: 5px;
-            position: relative;
-        }
-        .image-box img {
-               box-shadow: rgba(0, 0, 0, 0.3) 2px 2px 8px 0px;
- 
+       body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #000;
+    color: #fff;
+}
+
+#map {
+    height: 100vh;
+    width: 100vw;
+}
+
+.leaflet-popup-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.image-box {
+    width: 100px;
+    margin: 5px 0;
+    transition: transform 1s ease, filter 1s ease;
+    border-radius: 5px;
+    position: relative;
+    z-index: 1;
+}
+
+.image-box img {
+    box-shadow: rgba(0, 0, 0, 0.3) 2px 2px 8px 0px;
     display: block;
     width: 70px !important;
     height: auto;
     border-radius: 5px;
     border: 2px solid;
-        }
-        .image-title {
- 
-    position: absolute;
-      background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(20px); 
-            color:black;
-            text-shadow: 0px 0px 4px white;
-            border-radius: 5px;
-     font-size: 4px;
-    padding: 5px; 
-            height: auto;
-    bottom: -20px;
+    z-index: 1;
+}
 
+.image-title {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(20px);
+    color: black;
+    text-shadow: 0px 0px 4px white;
+    border-radius: 5px;
+    font-size: 4px;
+    padding: 5px;
+    bottom: -20px;
     width: auto;
     text-align: center;
-      padding: 2px 2px;
     opacity: 0;
     transition: opacity 1s ease-in-out;
-        }
-        .image-box:hover .image-title {
-            opacity: 1;
-            z-index:9999 !important;
-        }
-        .image-box:hover {
-            z-index: 100;
-            transform: scale(5);
-           z-index:9999 !important;
-            filter: blur(0);
-        }
-        .image-box:hover img {
-         z-index:9999 !important;
-        }
-        #queryTitle {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(20px); 
-            color:black;
-            text-shadow: 0px 0px 4px white;
-            border-radius: 5px;
-            z-index: 999;
-            position: absolute;
-            padding: 10px;
-            left: 20px;
-            top: 20px;
-        }
-        #hoveredLanguage {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(20px);
-            text-shadow: 0px 0px 4px white;
-        }
+    z-index: 2;
+}
+
+.image-box:hover .image-title {
+    opacity: 1;
+    z-index: 100;
+}
+
+.image-box:hover {
+    z-index: 100;
+    transform: scale(5);
+}
+
+.image-box:hover img {
+    z-index: 100;
+}
+
+#queryTitle {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(20px);
+    color: black;
+    text-shadow: 0px 0px 4px white;
+    border-radius: 5px;
+    z-index: 999;
+    position: absolute;
+    padding: 10px;
+    left: 20px;
+    top: 20px;
+}
+
+#hoveredLanguage {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(20px);
+    text-shadow: 0px 0px 4px white;
+    z-index: 999;
+}
+
     </style>
 </head>
 <body>
