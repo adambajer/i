@@ -19,17 +19,23 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
         }
         .row {
             display: flex;
             justify-content: center;
-            position: absolute;
             width: 100%;
+            margin-bottom: 10px;
         }
         .image-box {
             margin: 5px;
             transition: transform 0.3s ease, filter 0.3s ease, z-index 0.3s ease;
             border-radius: 10px;
+            overflow: hidden;
+            position: relative;
         }
         .image-box img {
             display: block;
@@ -208,7 +214,6 @@
             };
 
             const createImageBox = function(src, title, lang, index) {
-                const rows = Math.ceil(displayedTitles.length / 5);
                 const rowIndex = Math.floor(index / 5);
                 const colIndex = index % 5;
 
@@ -216,13 +221,12 @@
                 imgBox.classList.add('image-box');
                 imgBox.style.width = `${20 - rowIndex * 2}%`;
                 imgBox.style.filter = `blur(${rowIndex}px)`;
-                imgBox.style.zIndex = rows - rowIndex;
+                imgBox.style.zIndex = 10 - rowIndex;
                 imgBox.innerHTML = `<img src="${src}" alt="${title}"><div class="image-title">${title} (${langNames[lang]})</div>`;
                 
                 if (!document.querySelector(`.row-${rowIndex}`)) {
                     const row = document.createElement('div');
                     row.classList.add('row', `row-${rowIndex}`);
-                    row.style.bottom = `${rowIndex + 10}%`;
                     container.appendChild(row);
                 }
                 document.querySelector(`.row-${rowIndex}`).appendChild(imgBox);
