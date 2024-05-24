@@ -273,7 +273,7 @@
         const calculateImageSize = (bounds) => {
             const width = bounds.getEast() - bounds.getWest();
             const height = bounds.getNorth() - bounds.getSouth();
-            const scaleFactor = 100000; // Adjust scale factor as needed
+            const scaleFactor = 10; // Adjust scale factor as needed
             return {
                 width: width * scaleFactor,
                 height: height * scaleFactor
