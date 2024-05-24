@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Imagers</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-      <style>
+     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -233,8 +233,7 @@
             diq: 'Zazaki', am: 'Amharic', ckb: 'Central Kurdish', ia: 'Interlingua', nap: 'Neapolitan',
             bug: 'Buginese', 'bat-smg': 'Samogitian', wa: 'Walloon'
         };
-
-         const fetchStateBoundaries = async (countryName) => {
+ const fetchStateBoundaries = async (countryName) => {
             const url = `https://nominatim.openstreetmap.org/search?country=${countryName}&polygon_geojson=1&format=json`;
             const response = await fetch(url);
             const data = await response.json();
@@ -271,9 +270,9 @@
         };
 
         const calculateImageSize = (bounds) => {
-            const width = bounds.getEast() - bounds.getWest();
-            const height = bounds.getNorth() - bounds.getSouth();
-            const scaleFactor = 100; // Adjust scale factor as needed
+            const width = map.latLngToLayerPoint(bounds.getNorthEast()).x - map.latLngToLayerPoint(bounds.getSouthWest()).x;
+            const height = map.latLngToLayerPoint(bounds.getNorthEast()).y - map.latLngToLayerPoint(bounds.getSouthWest()).y;
+            const scaleFactor = 0.6; // Adjust scale factor as needed
             return {
                 width: width * scaleFactor,
                 height: height * scaleFactor
@@ -369,7 +368,6 @@
 
         annyang.addCommands(commands);
         annyang.start({ autoRestart: true, continuous: false });
- 
     </script>
 </body>
 </html>
