@@ -22,17 +22,13 @@
             position: absolute;
             transition: transform 0.3s ease, filter 0.3s ease, z-index 0.3s ease;
             border-radius: 10px;
+            will-change: transform;
         }
         .image-box img {
             display: block;
             width: 100%;
             height: auto;
             border-radius: 10px;
-        }
-        .image-box:hover {
-            z-index: 100;
-            transform: scale(1.2);
-            filter: blur(0);
         }
         .image-title {
             position: absolute;
@@ -48,6 +44,11 @@
         .image-box:hover .image-title {
             opacity: 1;
         }
+        .image-box.focused {
+            z-index: 100;
+            transform: scale(1.2) !important;
+            filter: blur(0) !important;
+        }
         #queryTitle {
             background: rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(20px);
@@ -59,10 +60,21 @@
             left: 20px;
             top: 20px;
         }
+        #hoveredLanguage {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(20px);
+            padding: 10px;
+            border-radius: 10px;
+            text-shadow: 0px 0px 4px white;
+        }
     </style>
 </head>
 <body>
     <h1 id="queryTitle">"<span id="queryPlaceholder">Say anything</span>"</h1>
+    <div id="hoveredLanguage"></div>
     <div class="container" id="imageContainer"></div>
     <audio id="dingSound" src="ding.mp3"></audio>
 
@@ -71,8 +83,10 @@
     <script>
         if (annyang) {
             const container = document.getElementById('imageContainer');
+            const hoveredLanguage = document.getElementById('hoveredLanguage');
             let displayedImages = [];
             let displayedTitles = [];
+            let layers = [];
 
             const languages = [
                 'en', 'sv', 'ceb', 'de', 'nl', 'fr', 'ru', 'it', 'es', 'pl',
@@ -116,6 +130,7 @@
                 container.innerHTML = '';
                 displayedImages = [];
                 displayedTitles = [];
+                layers = [[], [], []]; // Initialize layers
                 fetchImages(tag, 'en');
             };
 
@@ -186,37 +201,46 @@
             };
 
             const createImageBox = function(src, title, lang, index) {
+                const layerIndex = Math.floor(Math.random() * 3); // Randomly assign to one of the 3 layers
                 const imgBox = document.createElement('div');
                 imgBox.classList.add('image-box');
                 imgBox.style.top = `${Math.random() * 80}vh`;
                 imgBox.style.left = `${Math.random() * 80}vw`;
                 imgBox.style.width = `${20 + Math.random() * 10}vw`;
-                imgBox.style.zIndex = Math.floor(Math.random() * 10);
-                imgBox.style.filter = `blur(${imgBox.style.zIndex}px)`;
-                imgBox.innerHTML = `<img src="${src}" alt="${title}"><div class="image-title">${title} (${lang})</div>`;
+                imgBox.style.zIndex = layerIndex;
+                imgBox.style.filter = `blur(${3 - layerIndex}px)`;
+                imgBox.innerHTML = `<img src="${src}" alt="${title}"><div class="image-title">${title} (${langNames[lang]})</div>`;
+                layers[layerIndex].push(imgBox);
                 container.appendChild(imgBox);
 
                 imgBox.addEventListener('mouseenter', () => {
-                    imgBox.style.zIndex = 100;
-                    imgBox.style.transform = 'scale(1.2)';
-                    imgBox.style.filter = 'blur(0)';
+                    layers[layerIndex].forEach(box => box.classList.add('focused'));
+                    hoveredLanguage.textContent = langNames[lang];
                 });
 
                 imgBox.addEventListener('mouseleave', () => {
-                    imgBox.style.zIndex = Math.floor(Math.random() * 10);
-                    imgBox.style.transform = 'scale(1)';
-                    imgBox.style.filter = `blur(${imgBox.style.zIndex}px)`;
+                    layers[layerIndex].forEach(box => box.classList.remove('focused'));
+                    hoveredLanguage.textContent = '';
                 });
+
+                // Add random motion
+                const randomMotion = () => {
+                    const x = (Math.random() - 0.5) * 20;
+                    const y = (Math.random() - 0.5) * 20;
+                    imgBox.style.transform = `translate(${x}px, ${y}px)`;
+                };
+                setInterval(randomMotion, 2000);
             };
 
             document.addEventListener('mousemove', (e) => {
                 const x = (e.clientX / window.innerWidth) - 0.5;
                 const y = (e.clientY / window.innerHeight) - 0.5;
 
-                const images = document.querySelectorAll('.image-box');
-                images.forEach(img => {
-                    const zIndex = parseInt(img.style.zIndex);
-                    img.style.transform = `translate(${x * zIndex * 10}px, ${y * zIndex * 10}px)`;
+                layers.forEach((layer, layerIndex) => {
+                    layer.forEach(img => {
+                        const speed = (layerIndex + 1) * 2;
+                        img.style.transform = `translate(${-x * speed}px, ${-y * speed}px)`;
+                    });
                 });
             });
 
