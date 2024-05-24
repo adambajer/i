@@ -39,7 +39,8 @@
         }
         .image-title {
             position: absolute;
-            bottom: 0;     background: rgba(255,255,255,0.5);
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(20px);
             color: black;
             width: 100%;
@@ -98,16 +99,15 @@
             100% { transform: rotate(360deg); }
         }
         #queryTitle {
-        background: rgba(255,255,255,0.5);
-        backdrop-filter: blur(20px);
-        position: absolute;
-        position: absolute;
-        z-index: 999;
-        padding: 10PX;
-        TEXT-SHADOW: 0PX 0PX 4PX WHITE;
-        border-radius: 10px;
-        left: 20px;
-        top: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(20px);
+            position: absolute;
+            z-index: 999;
+            padding: 10px;
+            text-shadow: 0px 0px 4px white;
+            border-radius: 10px;
+            left: 20px;
+            top: 20px;
         }
     </style>
 </head>
@@ -121,10 +121,10 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         if (annyang) {
-             // Initialize audio elements
-        const dingSound = document.getElementById('dingSound');
+            // Initialize audio elements
+            const dingSound = document.getElementById('dingSound');
 
-        // Annyang callback for sound detection start
+            // Annyang callback for sound detection start
       
             const languages = [
                 'en', 'sv', 'ceb', 'de', 'nl', 'fr', 'ru', 'it', 'es', 'pl',
@@ -136,7 +136,7 @@
                 'oc', 'lv', 'ky', 'tt', 'bs', 'tg', 'sq', 'new', 'pms', 'tl',
                 'te', 'be-tarask', 'br', 'ast', 'ml', 'bn', 'io', 'af', 'pnb',
                 'gu', 'nds', 'scn', 'bpy', 'pa', 'azb', 'ku', 'mn', 'su', 'si',
-                'kn', 'diq', 'kk', 'am', 'ckb', 'ia', 'nap', 'bug', 'bat-smg', 'wa'
+                'kn', 'diq', 'am', 'ckb', 'ia', 'nap', 'bug', 'bat-smg', 'wa'
             ];
             
             const langNames = {
