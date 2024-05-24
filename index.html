@@ -10,7 +10,7 @@
             text-align: center;
             margin: 0;
             padding: 4px;
-            overflow: hidden; /* Ensure no scrollbars are visible */
+            overflow: hidden;
         }
         .container {
             position: relative;
@@ -34,6 +34,20 @@
             transform: scale(1.2);
             filter: blur(0);
         }
+        .image-title {
+            position: absolute;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            width: 100%;
+            text-align: center;
+            padding: 10px 0;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .image-box:hover .image-title {
+            opacity: 1;
+        }
         #queryTitle {
             background: rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(20px);
@@ -50,6 +64,7 @@
 <body>
     <h1 id="queryTitle">"<span id="queryPlaceholder">Say anything</span>"</h1>
     <div class="container" id="imageContainer"></div>
+    <audio id="dingSound" src="ding.mp3"></audio>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -59,13 +74,49 @@
             let displayedImages = [];
             let displayedTitles = [];
 
+            const languages = [
+                'en', 'sv', 'ceb', 'de', 'nl', 'fr', 'ru', 'it', 'es', 'pl',
+                'war', 'vi', 'ja', 'zh', 'pt', 'uk', 'ca', 'fa', 'no', 'sh',
+                'ar', 'fi', 'id', 'ro', 'cs', 'hu', 'sr', 'ko', 'ms', 'tr',
+                'min', 'eo', 'kk', 'eu', 'da', 'sk', 'bg', 'he', 'lt', 'hy',
+                'sl', 'hr', 'et', 'gl', 'nn', 'simple', 'uz', 'vo', 'la', 'el',
+                'az', 'ur', 'hi', 'th', 'ka', 'ce', 'be', 'ta', 'mk', 'mg',
+                'oc', 'lv', 'ky', 'tt', 'bs', 'tg', 'sq', 'new', 'pms', 'tl',
+                'te', 'be-tarask', 'br', 'ast', 'ml', 'bn', 'io', 'af', 'pnb',
+                'gu', 'nds', 'scn', 'bpy', 'pa', 'azb', 'ku', 'mn', 'su', 'si',
+                'kn', 'diq', 'am', 'ckb', 'ia', 'nap', 'bug', 'bat-smg', 'wa'
+            ];
+            
+            const langNames = {
+                en: 'English', sv: 'Swedish', ceb: 'Cebuano', de: 'German', nl: 'Dutch',
+                fr: 'French', ru: 'Russian', it: 'Italian', es: 'Spanish', pl: 'Polish',
+                war: 'Waray', vi: 'Vietnamese', ja: 'Japanese', zh: 'Chinese', pt: 'Portuguese',
+                uk: 'Ukrainian', ca: 'Catalan', fa: 'Persian', no: 'Norwegian', sh: 'Serbo-Croatian',
+                ar: 'Arabic', fi: 'Finnish', id: 'Indonesian', ro: 'Romanian', cs: 'Czech',
+                hu: 'Hungarian', sr: 'Serbian', ko: 'Korean', ms: 'Malay', tr: 'Turkish',
+                min: 'Minangkabau', eo: 'Esperanto', kk: 'Kazakh', eu: 'Basque', da: 'Danish',
+                sk: 'Slovak', bg: 'Bulgarian', he: 'Hebrew', lt: 'Lithuanian', hy: 'Armenian',
+                sl: 'Slovenian', hr: 'Croatian', et: 'Estonian', gl: 'Galician', nn: 'Norwegian Nynorsk',
+                simple: 'Simple English', uz: 'Uzbek', vo: 'Volapük', la: 'Latin', el: 'Greek',
+                az: 'Azerbaijani', ur: 'Urdu', hi: 'Hindi', th: 'Thai', ka: 'Georgian',
+                ce: 'Chechen', be: 'Belarusian', ta: 'Tamil', mk: 'Macedonian', mg: 'Malagasy',
+                oc: 'Occitan', lv: 'Latvian', ky: 'Kirghiz', tt: 'Tatar', bs: 'Bosnian',
+                tg: 'Tajik', sq: 'Albanian', new: 'Newar', pms: 'Piemontese', tl: 'Tagalog',
+                te: 'Telugu', 'be-tarask': 'Belarusian (Taraskievica)', br: 'Breton', ast: 'Asturian', ml: 'Malayalam',
+                bn: 'Bengali', io: 'Ido', af: 'Afrikaans', pnb: 'Western Punjabi', gu: 'Gujarati',
+                nds: 'Low Saxon', scn: 'Sicilian', bpy: 'Bishnupriya Manipuri', pa: 'Punjabi', azb: 'South Azerbaijani',
+                ku: 'Kurdish', mn: 'Mongolian', su: 'Sundanese', si: 'Sinhalese', kn: 'Kannada',
+                diq: 'Zazaki', am: 'Amharic', ckb: 'Central Kurdish', ia: 'Interlingua', nap: 'Neapolitan',
+                bug: 'Buginese', 'bat-smg': 'Samogitian', wa: 'Walloon'
+            };
+
             const showImages = function(tag) {
                 tag = tag.replace(/\.$/, '');
                 document.getElementById('queryPlaceholder').textContent = tag;
                 container.innerHTML = '';
                 displayedImages = [];
                 displayedTitles = [];
-                fetchImages(tag, 'en'); 
+                fetchImages(tag, 'en');
             };
 
             const fetchImages = function(tag, lang) {
@@ -75,11 +126,18 @@
                     method: 'GET',
                     success: function(data) {
                         if (data.query.search.length > 0) {
-                            const title = data.query.search[0].title;
-                            if (!displayedTitles.includes(title)) {
-                                displayedTitles.push(title);
-                                getImage(title, lang, tag);
-                            }
+                            data.query.search.slice(0, 10).forEach((result, index) => {
+                                const title = result.title;
+                                if (!displayedTitles.includes(title)) {
+                                    displayedTitles.push(title);
+                                    getImage(title, lang, tag, index);
+                                    languages.forEach(targetLang => {
+                                        if (targetLang !== 'en') {
+                                            getTranslation(title, 'en', targetLang, tag, index);
+                                        }
+                                    });
+                                }
+                            });
                         }
                     },
                     error: function() {
@@ -88,7 +146,27 @@
                 });
             };
 
-            const getImage = function(pageTitle, lang, tag) {
+            const getTranslation = function(title, fromLang, toLang, tag, index) {
+                const url = `https://${fromLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=langlinks&lllang=${toLang}&format=json&origin=*`;
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    success: function(data) {
+                        const pages = data.query.pages;
+                        const pageId = Object.keys(pages)[0];
+                        const translation = pages[pageId].langlinks ? pages[pageId].langlinks[0]['*'] : title;
+                        if (!displayedTitles.includes(translation)) {
+                            displayedTitles.push(translation);
+                            getImage(translation, toLang, tag, index);
+                        }
+                    },
+                    error: function() {
+                        console.log('Error in translation fetching for ' + toLang);
+                    }
+                });
+            };
+
+            const getImage = function(pageTitle, lang, tag, index) {
                 const url = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages|info&inprop=url&pithumbsize=500&format=json&origin=*`;
                 $.ajax({
                     url: url,
@@ -98,8 +176,7 @@
                         const pageId = Object.keys(pages)[0];
                         if (pages[pageId].thumbnail && !displayedImages.includes(pages[pageId].thumbnail.source)) {
                             displayedImages.push(pages[pageId].thumbnail.source);
-                            const pageUrl = pages[pageId].fullurl;
-                            createImageBox(pages[pageId].thumbnail.source, pageTitle, lang);
+                            createImageBox(pages[pageId].thumbnail.source, pageTitle, lang, index);
                         }
                     },
                     error: function() {
@@ -108,7 +185,7 @@
                 });
             };
 
-            const createImageBox = function(src, title, lang) {
+            const createImageBox = function(src, title, lang, index) {
                 const imgBox = document.createElement('div');
                 imgBox.classList.add('image-box');
                 imgBox.style.top = `${Math.random() * 80}vh`;
