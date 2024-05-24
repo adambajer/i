@@ -232,8 +232,7 @@
             ku: 'Kurdish', mn: 'Mongolian', su: 'Sundanese', si: 'Sinhalese', kn: 'Kannada',
             diq: 'Zazaki', am: 'Amharic', ckb: 'Central Kurdish', ia: 'Interlingua', nap: 'Neapolitan',
             bug: 'Buginese', 'bat-smg': 'Samogitian', wa: 'Walloon'
-        };
- const fetchStateBoundaries = async (countryName) => {
+        }; const fetchStateBoundaries = async (countryName) => {
             const url = `https://nominatim.openstreetmap.org/search?country=${countryName}&polygon_geojson=1&format=json`;
             const response = await fetch(url);
             const data = await response.json();
@@ -368,6 +367,9 @@
 
         annyang.addCommands(commands);
         annyang.start({ autoRestart: true, continuous: false });
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
