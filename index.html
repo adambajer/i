@@ -222,7 +222,7 @@
                 if (!document.querySelector(`.row-${rowIndex}`)) {
                     const row = document.createElement('div');
                     row.classList.add('row', `row-${rowIndex}`);
-                    row.style.bottom = `${rowIndex * 10 + 10}%`;
+                    row.style.bottom = `${rowIndex + 10}%`;
                     container.appendChild(row);
                 }
                 document.querySelector(`.row-${rowIndex}`).appendChild(imgBox);
